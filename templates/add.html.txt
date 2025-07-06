@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html>
+<head><title>Library System</title></head>
+<body>
+  <h1>📘 Library System</h1>
+  <a href="/add">➕ Add Book</a><br>
+  <a href="/view">📚 View Books</a><br>
+  <a href="/search">🔍 Search Book</a>
+</body>
+</html>
