@@ -25,8 +25,10 @@ def view_books():
     try:
         with open(BOOK_FILE, "r") as f:
             for line in f:
-                book_id, title, author, status = line.strip().split(",")
-                books.append({"id": book_id, "title": title, "author": author, "status": status})
+                parts = line.strip().split(",")
+                if len(parts) == 4:
+                    book_id, title, author, status = parts
+                    books.append({"id": book_id, "title": title, "author": author, "status": status})
     except FileNotFoundError:
         pass
     return render_template("view.html", books=books)
@@ -38,9 +40,11 @@ def search():
         keyword = request.form["keyword"].lower()
         with open(BOOK_FILE, "r") as f:
             for line in f:
-                book_id, title, author, status = line.strip().split(",")
-                if keyword in title.lower() or keyword in author.lower():
-                    results.append({"id": book_id, "title": title, "author": author, "status": status})
+                parts = line.strip().split(",")
+                if len(parts) == 4:
+                    book_id, title, author, status = parts
+                    if keyword in title.lower() or keyword in author.lower():
+                        results.append({"id": book_id, "title": title, "author": author, "status": status})
     return render_template("search.html", results=results)
 
 if __name__ == "__main__":
