@@ -3,7 +3,7 @@ import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-app = Flask(**name**)
+app = Flask(_name_)
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
@@ -141,6 +141,6 @@ return render_template("search.html", results=results)
 
 init_db()
 
-if **name** == "**main**":
+if _name_ == "_main_":
 port = int(os.environ.get("PORT", 5000))
 app.run(host="0.0.0.0", port=port)
