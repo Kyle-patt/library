@@ -1,39 +1,39 @@
 from flask import Flask, render_template, request, redirect
 import os
-import psycopg2
-from psycopg2.extras import RealDictCursor
+import psycopg
+from psycopg.rows import dict_row
 
 app = Flask(__name__)
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
+
 def get_db():
-    return psycopg2.connect(
+    return psycopg.connect(
         DATABASE_URL,
-        cursor_factory=RealDictCursor
+        row_factory=dict_row
     )
 
+
 def init_db():
-    conn = get_db()
-    cur = conn.cursor()
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute('''
+                CREATE TABLE IF NOT EXISTS books (
+                    id SERIAL PRIMARY KEY,
+                    book_id VARCHAR(50) UNIQUE,
+                    title VARCHAR(255),
+                    author VARCHAR(255),
+                    status VARCHAR(20) DEFAULT 'Yes'
+                );
+            ''')
+        conn.commit()
 
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS books (
-            id SERIAL PRIMARY KEY,
-            book_id VARCHAR(50) UNIQUE,
-            title VARCHAR(255),
-            author VARCHAR(255),
-            status VARCHAR(20) DEFAULT 'Yes'
-        );
-    """)
-
-    conn.commit()
-    cur.close()
-    conn.close()
 
 @app.route("/")
 def home():
     return render_template("index.html")
+
 
 @app.route("/add", methods=["GET", "POST"])
 def add_book():
@@ -42,53 +42,46 @@ def add_book():
         title = request.form["title"]
         author = request.form["author"]
 
-        conn = get_db()
-        cur = conn.cursor()
-
-        cur.execute(
-            """
-            INSERT INTO books
-            (book_id, title, author, status)
-            VALUES (%s, %s, %s, %s)
-            """,
-            (book_id, title, author, "Yes")
-        )
-
-        conn.commit()
-        cur.close()
-        conn.close()
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    '''
+                    INSERT INTO books
+                    (book_id, title, author, status)
+                    VALUES (%s, %s, %s, %s)
+                    ''',
+                    (book_id, title, author, "Yes")
+                )
+            conn.commit()
 
         return redirect("/view")
 
     return render_template("add.html")
 
+
 @app.route("/view")
 def view_books():
-    conn = get_db()
-    cur = conn.cursor()
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute('''
+                SELECT book_id, title, author, status
+                FROM books
+                ORDER BY id DESC
+            ''')
+            rows = cur.fetchall()
 
-    cur.execute("""
-        SELECT book_id, title, author, status
-        FROM books
-        ORDER BY id DESC
-    """)
-
-    rows = cur.fetchall()
-
-    books = []
-
-    for row in rows:
-        books.append({
+    books = [
+        {
             "id": row["book_id"],
             "title": row["title"],
             "author": row["author"],
             "status": row["status"]
-        })
-
-    cur.close()
-    conn.close()
+        }
+        for row in rows
+    ]
 
     return render_template("view.html", books=books)
+
 
 @app.route("/search", methods=["GET", "POST"])
 def search():
@@ -97,33 +90,21 @@ def search():
     if request.method == "POST":
         keyword = request.form["keyword"]
 
-        conn = get_db()
-        cur = conn.cursor()
-
-        cur.execute(
-            """
-            SELECT book_id, title, author, status
-            FROM books
-            WHERE LOWER(title) LIKE LOWER(%s)
-               OR LOWER(author) LIKE LOWER(%s)
-            """,
-            (f"%{keyword}%", f"%{keyword}%")
-        )
-
-        rows = cur.fetchall()
-
-        for row in rows:
-            results.append({
-                "id": row["book_id"],
-                "title": row["title"],
-                "author": row["author"],
-                "status": row["status"]
-            })
-
-        cur.close()
-        conn.close()
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    '''
+                    SELECT book_id, title, author, status
+                    FROM books
+                    WHERE LOWER(title) LIKE LOWER(%s)
+                       OR LOWER(author) LIKE LOWER(%s)
+                    ''',
+                    (f"%{keyword}%", f"%{keyword}%")
+                )
+                results = cur.fetchall()
 
     return render_template("search.html", results=results)
+
 
 init_db()
 
