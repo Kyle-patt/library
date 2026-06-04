@@ -3,7 +3,7 @@ import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-app = Flask(_name_)
+app = Flask(**name**)
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
@@ -116,9 +116,8 @@ if request.method == "POST":
         """
         SELECT book_id,title,author,status
         FROM books
-        WHERE
-        LOWER(title) LIKE LOWER(%s)
-        OR LOWER(author) LIKE LOWER(%s)
+        WHERE LOWER(title) LIKE LOWER(%s)
+           OR LOWER(author) LIKE LOWER(%s)
         """,
         (f"%{keyword}%", f"%{keyword}%")
     )
@@ -141,6 +140,6 @@ return render_template("search.html", results=results)
 
 init_db()
 
-if _name_ == "_main_":
+if **name** == "**main**":
 port = int(os.environ.get("PORT", 5000))
 app.run(host="0.0.0.0", port=port)
